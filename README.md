@@ -40,3 +40,89 @@ QualiEdge decouples fast visual inspection from deep LLM reasoning using an asyn
                                                                    │  138.4 ms (Zero Frame Drops)
                                                                    ▼
                                                   [Live Operator HMI + Metallurgical Action Plan + ISO 9001 CSV]
+```
+
+---
+
+## Hugging Face Models Integrated
+
+Authenticated models from the Hugging Face Hub power the vision and reasoning engines:
+
+| Engine | Hugging Face Repository | Local Target File | Purpose |
+| :--- | :--- | :--- | :--- |
+| **YOLOv8 Steel Defect Detector** | `kirkdokizelli/steel-defect-yolov8` | `models/checkpoints/neu_yolov8n_run/weights/best.pt` | Localizes 6 defect classes (crazing, inclusion, patches, pitted surface, rolled-in scale, scratches) on NEU dataset. |
+| **ResNet Defect Classifier (ONNX)** | `vectorsight/steel-defects-classifier-resnet` | `models/exported/neu_yolov8n_edge.onnx` | High-speed ONNX runtime edge engine (sub-15ms inference). |
+| **Llama 3.2 1B Instruct** | `meta-llama/Llama-3.2-1B-Instruct` | `advisory_engine/executorch_runner.py` | Metallurgical root cause analysis & ASTM A1008 remediation guidance. |
+
+---
+
+## Quick Start & Deployment
+
+### 🌐 Live Dashboard (GitHub Pages)
+The static HMI dashboard is automatically deployed and accessible online:
+🔗 **[https://AmitShaw2005.github.io/QualiEdge/](https://AmitShaw2005.github.io/QualiEdge/)**
+
+---
+
+### 🚀 Deployment Options
+
+#### Option 1: Docker Compose (Recommended for Cloud & Edge)
+Launch both the Python Edge Inference REST API and the React Dashboard together with a single command:
+```bash
+docker compose up --build
+```
+- Dashboard: `http://localhost:3000/QualiEdge/`
+- API & Docs: `http://localhost:8000/docs`
+
+#### Option 2: Linux / Raspberry Pi 5 / macOS One-Click
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+#### Option 3: Windows One-Click
+Double-click `start.bat` or run:
+```cmd
+start.bat
+```
+
+#### Option 4: Manual Local Setup
+1. **Frontend**:
+   ```bash
+   npm install
+   npm run dev
+   ```
+2. **Backend**:
+   ```bash
+   pip install -r requirements.txt
+   python backend/main.py
+   ```
+
+---
+
+## Core REST Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/health` | Edge SoC health status, NPU connection, SQLite WAL mode verification. |
+| `GET` | `/api/stats` | Quality control KPIs (total inspected, accepted, rejected, yield %, avg latency). |
+| `POST` | `/api/inspect` | Dual-engine YOLOv8 + Section 7 gating + Llama 3.2 metallurgical evaluation. |
+| `GET` | `/api/history` | Paginated SQLite inspection records with defect type, severity, and confidence filters. |
+| `POST` | `/api/operator/override` | ISO 9001 operator tactile override log with auditor signature & notes. |
+| `POST` | `/api/benchmark/run` | Microsecond-precision stage profiler (P50, P90, P95, P99, sustained FPS). |
+| `POST` | `/api/benchmark/stress-test`| Continuous memory leak verification over 300+ cycles. |
+| `GET` | `/api/deployment/verification`| 7-point factory hardware readiness validation suite. |
+| `POST` | `/api/db/vacuum` | SQLite B-tree compaction and WAL checkpointing. |
+| `GET` | `/api/reports/certificate/{id}`| Tamper-evident SHA-256 sealed ISO 9001 / ASTM A1008 inspection certificate. |
+
+---
+
+## Verification & Test Results
+
+Run the full automated test suite:
+```powershell
+python -m unittest discover -s tests
+```
+- **Tests**: 59/59 passed in 3.3s.
+- **Frontend Build**: `npm run build` completed cleanly in 568ms.
+- **Type Check**: `npm run lint` (`tsc --noEmit`) 0 errors.
