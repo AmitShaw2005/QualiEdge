@@ -23,7 +23,7 @@ const rootRedirectPlugin = () => ({
 
 export default defineConfig(() => {
   return {
-    base: '/QualiEdge/',
+    base: './',
     plugins: [react(), tailwindcss(), rootRedirectPlugin()],
     resolve: {
       alias: {
