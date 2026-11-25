@@ -1,0 +1,36 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Secrets & Authentication
+HF_TOKEN.txt
+*.token
+*.pem
+*.key
+
+# Python build & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Training runs & temporary augmentations
+data/custom_dataset/
+models/checkpoints/custom_yolov8n_run/
+runs/
+
+# Operating system & Editor
+.vscode/
+.idea/
+Thumbs.db

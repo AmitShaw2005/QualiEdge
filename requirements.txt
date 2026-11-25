@@ -1,0 +1,13 @@
+# QualiEdge Industrial Edge Quality Control - Python Dependencies
+fastapi>=0.110.0
+uvicorn>=0.28.0
+pydantic>=2.6.0
+numpy>=1.24.0
+Pillow>=10.0.0
+opencv-python-headless>=4.8.0
+ultralytics>=8.3.0
+torch>=2.1.0
+torchvision>=0.16.0
+onnxruntime>=1.17.0
+huggingface_hub>=0.20.0
+requests>=2.31.0
