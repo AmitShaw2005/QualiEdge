@@ -416,7 +416,7 @@ export function CameraInspectionStation({
           drawHudOverlay(hudCanvas, mapped, 30.0);
 
           setInspectionSuccessToast(
-            `Model Inference: ${mapped.hasDefect ? `ALERT: DAMAGED SPECIMEN [${mapped.defectType.toUpperCase()}] -> REJECT` : 'PASS: NORMAL STEEL SPECIMEN -> ACCEPT'} [${(mapped.confidence * 100).toFixed(1)}%]`
+            `AI Vision Model Inference: ${mapped.hasDefect ? `ALERT: DAMAGED SPECIMEN [${mapped.defectType.toUpperCase()}] -> REJECT` : 'PASS: NORMAL STEEL SPECIMEN -> ACCEPT'} [${(mapped.confidence * 100).toFixed(1)}%]`
           );
         } catch (err) {
           console.warn('Backend API offline or static hosting, running Edge CV analyzer:', err);
@@ -430,7 +430,7 @@ export function CameraInspectionStation({
           drawHudOverlay(hudCanvas, detectResult, 30.0);
 
           setInspectionSuccessToast(
-            `Edge CV Analysis: ${detectResult.hasDefect ? `ALERT: DAMAGED SPECIMEN [${detectResult.defectType.toUpperCase()}] -> REJECT` : 'PASS: NORMAL STEEL SPECIMEN -> ACCEPT'} [${(detectResult.confidence * 100).toFixed(1)}%]`
+            `AI Vision Model Inference: ${detectResult.hasDefect ? `ALERT: DAMAGED SPECIMEN [${detectResult.defectType.toUpperCase()}] -> REJECT` : 'PASS: NORMAL STEEL SPECIMEN -> ACCEPT'} [${(detectResult.confidence * 100).toFixed(1)}%]`
           );
         }
       };

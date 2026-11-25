@@ -569,7 +569,7 @@ export function drawHudOverlay(
     height - 6
   );
 
-  const decisionBadge = result.hasDefect ? 'DECISION: REJECT (DAMAGED)' : 'DECISION: ACCEPT';
+  const decisionBadge = result.hasDefect ? 'DECISION: REJECT (DAMAGED)' : 'DECISION: ACCEPT (GOOD)';
   const decColor = result.hasDefect ? '#f43f5e' : '#10b981';
   ctx.fillStyle = decColor;
   ctx.font = 'bold 9px monospace';

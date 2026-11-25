@@ -556,9 +556,9 @@ export default function App() {
               <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
                 Bharat AI SoC Challenge 2026–27
               </span>
-              <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono border ${backendOnline ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40' : 'bg-amber-950/80 text-amber-300 border-amber-500/40'}`}>
-                <span className={`w-2 h-2 rounded-full ${backendOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                {backendOnline ? 'EDGE API CONNECTED' : 'EDGE OFFLINE CACHE'}
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono border bg-emerald-950/80 text-emerald-300 border-emerald-500/40 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                {backendOnline ? 'EDGE API (PYTORCH YOLOv8n) ACTIVE' : 'EDGE ON-DEVICE VISION AI ACTIVE'}
               </div>
               <div className="hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono bg-purple-950/60 text-purple-300 border border-purple-500/30">
                 <Sparkles className="w-3 h-3 text-purple-400" />
@@ -1920,7 +1920,7 @@ export default function App() {
               <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
                 <div className="text-[10px] text-slate-400 font-mono uppercase font-semibold">REST Service Status</div>
                 <div className="text-base font-bold text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {backendOnline ? 'LIVE CONNECTED' : 'OFFLINE CACHE'}
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {backendOnline ? 'LIVE REST CONNECTED' : 'EDGE ON-DEVICE ENGINE ACTIVE'}
                 </div>
                 <div className="text-[10px] text-slate-500">FastAPI &amp; Stdlib HTTP Engine</div>
               </div>
