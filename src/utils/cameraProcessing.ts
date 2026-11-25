@@ -179,6 +179,7 @@ export function analyzeImageForDefects(
   let defectBins: { c: number; r: number; gradEnergy: number }[] = [];
   let gradXTotal = 0;
   let gradYTotal = 0;
+  let maxBlockGrad = 0;
 
   if (ctx) {
     try {
@@ -255,6 +256,7 @@ export function analyzeImageForDefects(
 
           gradXTotal += blockGx;
           gradYTotal += blockGy;
+          if (gradEnergy > maxBlockGrad) maxBlockGrad = gradEnergy;
 
           // Anomaly criteria: high edge density, fracture cracks, or dark defect gouges
           const isAnomaly =
@@ -271,6 +273,13 @@ export function analyzeImageForDefects(
     }
   }
 
+  const sampleCount = Math.max(1, Math.floor(width / 2) * Math.floor(height / 2));
+  const globalMeanGrad = (gradXTotal + gradYTotal) / (2 * sampleCount);
+  const isSurfaceDamaged =
+    defectBins.length >= 3 ||
+    (defectBins.length >= 2 && maxBlockGrad > 6.0) ||
+    (globalMeanGrad > 3.8 && maxBlockGrad > 7.0);
+
   // Determine defect classification
   let defectType = 'normal';
   let severity: 'Low' | 'Medium' | 'High' | 'Critical' = 'Low';
@@ -283,30 +292,30 @@ export function analyzeImageForDefects(
     else if (defectType === 'scratches' || defectType === 'patches') severity = 'Medium';
     else severity = 'Low';
     confidence = 0.942;
-  } else if (defectBins.length >= 3) {
-    // 3 or more spatial anomaly blocks indicates verified surface damage
+  } else if (isSurfaceDamaged) {
+    // Verified surface damage -> REJECT
     const isDirectional = gradXTotal > 1.35 * gradYTotal || gradYTotal > 1.35 * gradXTotal;
     if (isDirectional) {
       defectType = 'scratches';
       severity = 'High';
-      confidence = 0.915;
-    } else if (defectBins.length >= 12) {
+      confidence = 0.935;
+    } else if (defectBins.length >= 10 || globalMeanGrad > 6.0) {
       defectType = 'crazing';
       severity = 'Critical';
-      confidence = 0.945;
+      confidence = 0.950;
     } else if (variance > 1800) {
       defectType = 'pitted_surface';
       severity = 'High';
-      confidence = 0.895;
+      confidence = 0.910;
     } else {
       defectType = 'patches';
       severity = 'Medium';
-      confidence = 0.880;
+      confidence = 0.890;
     }
   } else {
     defectType = 'normal';
     severity = 'Low';
-    confidence = 0.992;
+    confidence = 0.995;
   }
 
   const hasDefect = defectType !== 'normal';
