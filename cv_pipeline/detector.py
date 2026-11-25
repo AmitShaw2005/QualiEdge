@@ -226,10 +226,74 @@ class SteelDefectDetector:
             except Exception:
                 pass
 
-        if not boxes and (img_array is None or self.backend == "calibration_engine"):
-            # Deterministic Edge Calibration Engine
-            # Identifies defect signatures if present
-            # Default sample detection for pipeline verification
+        if not boxes and img_array is not None and self.backend == "calibration_engine":
+            # Image-based pixel analysis for calibration engine fallback
+            try:
+                import numpy as np
+                gray = np.mean(img_array, axis=2) if len(img_array.shape) == 3 else img_array
+                mean_val = float(np.mean(gray))
+                var_val = float(np.var(gray))
+                std_val = max(1.0, float(np.sqrt(var_val)))
+
+                gx = np.abs(gray[:, 1:] - gray[:, :-1])
+                gy = np.abs(gray[1:, :] - gray[:-1, :])
+
+                grid_c, grid_r = 8, 6
+                cell_w = w // grid_c
+                cell_h = h // grid_r
+                defect_blocks = []
+
+                for r in range(grid_r):
+                    for c in range(grid_c):
+                        sub = gray[r*cell_h:(r+1)*cell_h, c*cell_w:(c+1)*cell_w]
+                        sub_gx = gx[r*cell_h:(r+1)*cell_h, c*cell_w:(c+1)*cell_w-1]
+                        sub_gy = gy[r*cell_h:(r+1)*cell_h-1, c*cell_w:(c+1)*cell_w]
+
+                        sub_var = float(np.var(sub))
+                        grad_e = (float(np.mean(sub_gx)) + float(np.mean(sub_gy))) / 2.0
+                        high_g = float(np.sum(sub_gx > 18)) / max(1, sub_gx.size)
+                        dark_r = float(np.sum(sub < (mean_val - 1.5 * std_val))) / max(1, sub.size)
+
+                        if (high_g > 0.035 and grad_e > 4.2) or (dark_r > 0.05 and sub_var > 500):
+                            defect_blocks.append((c, r, grad_e))
+
+                if len(defect_blocks) >= 3:
+                    min_c = min(b[0] for b in defect_blocks)
+                    max_c = max(b[0] for b in defect_blocks)
+                    min_r = min(b[1] for b in defect_blocks)
+                    max_r = max(b[1] for b in defect_blocks)
+
+                    bx1 = max(0, int(min_c * cell_w))
+                    by1 = max(0, int(min_r * cell_h))
+                    bx2 = min(w, int((max_c + 1) * cell_w))
+                    by2 = min(h, int((max_r + 1) * cell_h))
+                    bw_px = bx2 - bx1
+                    bh_px = by2 - by1
+
+                    # Determine defect class from aspect ratio & block density
+                    is_dir = bw_px > 1.4 * bh_px or bh_px > 1.4 * bw_px
+                    cls_id = 5 if is_dir else (0 if len(defect_blocks) >= 12 else 2)
+                    cls_nm = DEFECT_CLASSES.get(cls_id, "scratches")
+
+                    boxes.append(DetectionBox(
+                        class_id=cls_id,
+                        class_name=cls_nm,
+                        confidence=0.925,
+                        xc=round((bx1 + bw_px / 2) / w, 4),
+                        yc=round((by1 + bh_px / 2) / h, 4),
+                        w=round(bw_px / w, 4),
+                        h=round(bh_px / h, 4),
+                        x1=bx1,
+                        y1=by1,
+                        x2=bx2,
+                        y2=by2,
+                        area_ratio=round((bw_px * bh_px) / (w * h), 4)
+                    ))
+            except Exception:
+                pass
+
+        elif not boxes and img_array is None:
+            # Deterministic Edge Calibration Engine (synthetic simulation without image)
             boxes.append(DetectionBox(
                 class_id=5,
                 class_name="scratches",
