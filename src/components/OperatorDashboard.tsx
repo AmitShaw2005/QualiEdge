@@ -366,7 +366,9 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({
 
       const hasDefect = detection.hasDefect;
       const defectType = detection.defectType;
-      const decision = hasDefect ? 'REJECT' : 'ACCEPT';
+      const decision = hasDefect
+        ? (detection.severity === 'Critical' ? 'REJECT' : detection.severity === 'High' ? 'REJECT' : 'MANUAL_REVIEW')
+        : 'ACCEPT';
       const loc = detection.box.xc < 0.35 ? 'Drive Side (DS)' : detection.box.xc > 0.65 ? 'Operator Side (OS)' : 'Central Web';
 
       const newRecord: InspectionRecord = {

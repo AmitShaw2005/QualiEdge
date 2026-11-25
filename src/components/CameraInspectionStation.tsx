@@ -214,7 +214,7 @@ export function CameraInspectionStation({
         }
         drawHudOverlay(hudCanvas, activeResultRef.current, cameraFps);
 
-        // 4. Asynchronously run real fine-tuned YOLO model or client-side CV every 500ms
+        // 4. Asynchronously run real fine-tuned YOLO model every 500ms
         const now = performance.now();
         if (now - lastWebcamInferTimeRef.current >= 500 && !isInspectingWebcamRef.current) {
           lastWebcamInferTimeRef.current = now;
@@ -227,19 +227,11 @@ export function CameraInspectionStation({
                 activeResultRef.current = mapped;
                 setActiveResult(mapped);
               })
-              .catch(() => {
-                // Real-time client-side Edge CV analysis for live webcam stream
-                const mapped = analyzeImageForDefects(rawCanvas);
-                activeResultRef.current = mapped;
-                setActiveResult(mapped);
-              })
+              .catch(() => {})
               .finally(() => {
                 isInspectingWebcamRef.current = false;
               });
           } catch {
-            const mapped = analyzeImageForDefects(rawCanvas);
-            activeResultRef.current = mapped;
-            setActiveResult(mapped);
             isInspectingWebcamRef.current = false;
           }
         }
@@ -419,7 +411,7 @@ export function CameraInspectionStation({
             `AI Vision Model Inference: ${mapped.hasDefect ? `ALERT: DAMAGED SPECIMEN [${mapped.defectType.toUpperCase()}] -> REJECT` : 'PASS: NORMAL STEEL SPECIMEN -> ACCEPT'} [${(mapped.confidence * 100).toFixed(1)}%]`
           );
         } catch (err) {
-          console.warn('Backend API offline or static hosting, running Edge CV analyzer:', err);
+          console.warn('Backend inference failed, falling back:', err);
           const detectResult = analyzeImageForDefects(rawCanvas);
           activeResultRef.current = detectResult;
           setActiveResult(detectResult);

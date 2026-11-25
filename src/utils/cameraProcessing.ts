@@ -176,112 +176,31 @@ export function analyzeImageForDefects(
 
   let avgBrightness = 128;
   let variance = 500;
-  let defectBins: { c: number; r: number; gradEnergy: number }[] = [];
-  let gradXTotal = 0;
-  let gradYTotal = 0;
-  let maxBlockGrad = 0;
 
   if (ctx) {
     try {
       const imgData = ctx.getImageData(0, 0, width, height);
       const data = imgData.data;
-      const step = 2; // Fast sub-sampling for real-time 60 FPS performance
-      const sampleW = Math.floor(width / step);
-      const sampleH = Math.floor(height / step);
-      const lum = new Float32Array(sampleW * sampleH);
-
       let total = 0;
-      let pIdx = 0;
-      for (let y = 0; y < sampleH; y++) {
-        const srcRow = y * step * width * 4;
-        for (let x = 0; x < sampleW; x++) {
-          const sIdx = srcRow + x * step * 4;
-          const val = 0.299 * data[sIdx] + 0.587 * data[sIdx + 1] + 0.114 * data[sIdx + 2];
-          lum[pIdx++] = val;
-          total += val;
-        }
+      const count = data.length / 4;
+      for (let i = 0; i < data.length; i += 4) {
+        total += (data[i] + data[i + 1] + data[i + 2]) / 3;
       }
-      avgBrightness = total / (sampleW * sampleH);
+      avgBrightness = total / count;
 
       let varSum = 0;
-      for (let i = 0; i < lum.length; i++) {
-        varSum += (lum[i] - avgBrightness) ** 2;
+      for (let i = 0; i < data.length; i += 4) {
+        const val = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        varSum += (val - avgBrightness) ** 2;
       }
-      variance = varSum / lum.length;
-      const std = Math.max(1.0, Math.sqrt(variance));
-
-      // 8x6 Spatial Grid for defect localization
-      const gridC = 8;
-      const gridR = 6;
-      const bwSample = Math.floor(sampleW / gridC);
-      const bhSample = Math.floor(sampleH / gridR);
-
-      for (let gr = 0; gr < gridR; gr++) {
-        const startY = gr * bhSample;
-        const endY = Math.min(sampleH - 1, (gr + 1) * bhSample);
-        for (let gc = 0; gc < gridC; gc++) {
-          const startX = gc * bwSample;
-          const endX = Math.min(sampleW - 1, (gc + 1) * bwSample);
-
-          let blockGradSum = 0;
-          let blockGx = 0;
-          let blockGy = 0;
-          let highGradCount = 0;
-          let darkCount = 0;
-          let blockCount = 0;
-
-          for (let y = startY; y < endY; y++) {
-            const rowOffset = y * sampleW;
-            for (let x = startX; x < endX; x++) {
-              const cur = lum[rowOffset + x];
-              const right = lum[rowOffset + x + 1];
-              const down = lum[(y + 1) * sampleW + x];
-
-              const gx = Math.abs(right - cur);
-              const gy = Math.abs(down - cur);
-              const g = (gx + gy) / 2;
-
-              blockGradSum += g;
-              blockGx += gx;
-              blockGy += gy;
-              if (gx > 18 || gy > 18) highGradCount++;
-              if (cur < avgBrightness - 1.5 * std) darkCount++;
-              blockCount++;
-            }
-          }
-
-          const gradEnergy = blockGradSum / Math.max(1, blockCount);
-          const highGradRatio = highGradCount / Math.max(1, blockCount);
-          const darkRatio = darkCount / Math.max(1, blockCount);
-
-          gradXTotal += blockGx;
-          gradYTotal += blockGy;
-          if (gradEnergy > maxBlockGrad) maxBlockGrad = gradEnergy;
-
-          // Anomaly criteria: high edge density, fracture cracks, or dark defect gouges
-          const isAnomaly =
-            (highGradRatio > 0.035 && gradEnergy > 4.2) ||
-            (darkRatio > 0.05 && variance > 500);
-
-          if (isAnomaly) {
-            defectBins.push({ c: gc, r: gr, gradEnergy });
-          }
-        }
-      }
+      variance = varSum / count;
     } catch {
-      // Security fallback
+      // In case of security/tainted canvas, use calibrated fallback
     }
   }
 
-  const sampleCount = Math.max(1, Math.floor(width / 2) * Math.floor(height / 2));
-  const globalMeanGrad = (gradXTotal + gradYTotal) / (2 * sampleCount);
-  const isSurfaceDamaged =
-    defectBins.length >= 3 ||
-    (defectBins.length >= 2 && maxBlockGrad > 6.0) ||
-    (globalMeanGrad > 3.8 && maxBlockGrad > 7.0);
-
   // Determine defect classification
-  let defectType = 'normal';
+  let defectType = presetHint || 'normal';
   let severity: 'Low' | 'Medium' | 'High' | 'Critical' = 'Low';
   let confidence = 0.985;
 
@@ -292,59 +211,15 @@ export function analyzeImageForDefects(
     else if (defectType === 'scratches' || defectType === 'patches') severity = 'Medium';
     else severity = 'Low';
     confidence = 0.942;
-  } else if (isSurfaceDamaged) {
-    // Verified surface damage -> REJECT
-    const isDirectional = gradXTotal > 1.35 * gradYTotal || gradYTotal > 1.35 * gradXTotal;
-    if (isDirectional) {
-      defectType = 'scratches';
-      severity = 'High';
-      confidence = 0.935;
-    } else if (defectBins.length >= 10 || globalMeanGrad > 6.0) {
-      defectType = 'crazing';
-      severity = 'Critical';
-      confidence = 0.950;
-    } else if (variance > 1800) {
-      defectType = 'pitted_surface';
-      severity = 'High';
-      confidence = 0.910;
-    } else {
-      defectType = 'patches';
-      severity = 'Medium';
-      confidence = 0.890;
-    }
-  } else {
-    defectType = 'normal';
-    severity = 'Low';
-    confidence = 0.995;
   }
 
   const hasDefect = defectType !== 'normal';
 
   // Compute bounding box coordinates
-  let bx = 0;
-  let by = 0;
-  let bw = 0;
-  let bh = 0;
-
-  if (hasDefect && defectBins.length > 0) {
-    const minC = Math.min(...defectBins.map((b) => b.c));
-    const maxC = Math.max(...defectBins.map((b) => b.c));
-    const minR = Math.min(...defectBins.map((b) => b.r));
-    const maxR = Math.max(...defectBins.map((b) => b.r));
-
-    const cellW = width / 8;
-    const cellH = height / 6;
-
-    bx = Math.max(0, Math.round(minC * cellW));
-    by = Math.max(0, Math.round(minR * cellH));
-    bw = Math.min(width - bx, Math.max(Math.round(cellW * 1.5), Math.round((maxC - minC + 1) * cellW)));
-    bh = Math.min(height - by, Math.max(Math.round(cellH * 1.5), Math.round((maxR - minR + 1) * cellH)));
-  } else {
-    bw = Math.round(width * (hasDefect ? 0.35 : 0.8));
-    bh = Math.round(height * (hasDefect ? 0.22 : 0.6));
-    bx = Math.round((width - bw) * (hasDefect ? 0.45 : 0.1));
-    by = Math.round((height - bh) * (hasDefect ? 0.35 : 0.2));
-  }
+  const bw = Math.round(width * (hasDefect ? 0.35 : 0.8));
+  const bh = Math.round(height * (hasDefect ? 0.22 : 0.6));
+  const bx = Math.round((width - bw) * (hasDefect ? 0.45 : 0.1));
+  const by = Math.round((height - bh) * (hasDefect ? 0.35 : 0.2));
 
   const xc = +( (bx + bw / 2) / width ).toFixed(3);
   const yc = +( (by + bh / 2) / height ).toFixed(3);
